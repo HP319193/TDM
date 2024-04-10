@@ -70,10 +70,11 @@ def query():
             
             retrieval_chain = create_retrieval_chain(retriever, combine_docs_chain)
             
-            print(retrieval_chain.invoke({"input": prompt}))
+            res = retrieval_chain.invoke({"input": prompt})
             
+            data = {"success": "ok", "response": res['answer']}
             
-            return jsonify({"success": "ok"})
+            return jsonify(data)
             
 @app.route('/uploadDocuments', methods=['POST'])
 @csrf.exempt

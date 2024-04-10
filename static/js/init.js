@@ -493,11 +493,13 @@ var FrenifyTechWaveTime = new Date();
 							}
 						}, 2000);
 
-
-						$('.sidebar_content').html('');
-						for (var i = 0; i < 3; i++) {
-							$('.sidebar_content').append('<img src="' + result.images[i] + '">');
+						if (title === "search") {
+							$('.sidebar_content').html('');
+							for (var i = 0; i < 3; i++) {
+								$('.sidebar_content').append('<img src="' + result.images[i] + '">');
+							}
 						}
+
 					}
 					else console.error("An error occurred...");
 				},
