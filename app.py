@@ -16,6 +16,7 @@ from langchain_openai import ChatOpenAI
 from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain import hub
+from langchain_core.prompts import ChatPromptTemplate
 
 import time
 load_dotenv()
@@ -64,15 +65,19 @@ def query():
 
         elif title == "rag":
             db = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
-            retriever = db.as_retriever()
             
-            combine_docs_chain = create_stuff_documents_chain(llm, retrieval_qa_chat_prompt)
+            docs = db.similarity_search(prompt)
             
-            retrieval_chain = create_retrieval_chain(retriever, combine_docs_chain)
+            prompt = ChatPromptTemplate.from_messages(
+                [("system", "{prompt}\n\n{context}")]
+            )
             
-            res = retrieval_chain.invoke({"input": prompt})
-            
-            data = {"success": "ok", "response": res['answer']}
+            llm = ChatOpenAI(model="gpt-4-1106-preview", api_key=OPENAI_API_KEY)
+            chain = create_stuff_documents_chain(llm, prompt)
+
+            answer = chain.invoke({"context": docs, "prompt": prompt})
+
+            data = {"success": "ok", "response": answer}
             
             return jsonify(data)
             
@@ -80,25 +85,25 @@ def query():
 @csrf.exempt
 def uploadDocuments():
     uploaded_files = request.files.getlist('files[]')
-    
+    print(len(uploaded_files))
     if len(uploaded_files) > 0:    
-        try:
-            for file in uploaded_files:
-                file.save(f"uploads/{file.filename}")
+        # try:
+        for file in uploaded_files:
+            file.save(f"uploads/{file.filename}")
+        
+            if file.filename.endswith(".txt"):
+                loader = TextLoader(f"uploads/{file.filename}", encoding='utf-8')
+            else:
+                loader = PyPDFLoader(f"uploads/{file.filename}")
+                
+            data = loader.load()
+            texts = text_splitter.split_documents(data)
             
-                if file.filename.endswith(".txt"):
-                    loader = TextLoader(f"uploads/{file.filename}", encoding='utf-8')
-                else:
-                    loader = PyPDFLoader(f"uploads/{file.filename}")
-                    
-                data = loader.load()
-                texts = text_splitter.split_documents(data)
-                
-                Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db")
-                
-            return {'success': "ok"}
-        except:
-            return {"success": "bad"}
+            Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db")
+            
+        return {'success': "ok"}
+        # except:
+        #     return {"success": "bad"}
     else:
         return {"success": "bad"}
 
