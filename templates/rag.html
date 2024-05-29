@@ -202,6 +202,7 @@
 											alt="" class="fn__svg"></span>
 									<span class="text">RAG with Documents</span>
 								</a>
+
 							</li>
 						</ul>
 					</div>
@@ -266,6 +267,12 @@
 								<span class="text"></span>
 							</div> -->
 							<div class="sidebar_content">
+								<select id="querydb">
+									<option selected>Select a database</option>
+									{% for db in dbs %}
+									<option value="{{db}}">{{db}}</option>
+									{% endfor %}
+								</select>
 								<label class="fn__upload">
 									<a href="#" class="fn__closer fn__icon_button">
 										<img src="{{ url_for('static', filename='svg/close.svg') }}" alt=""
@@ -283,7 +290,9 @@
 							</div>
 
 							<div class="alert">
-
+								To create new database..
+								<input type="text" placeholder="New database name.." id="newdb_name">
+								<a href="#" class="techwave_fn_button" id="dbCreate"><span>Create</span></a>
 							</div>
 						</div>
 

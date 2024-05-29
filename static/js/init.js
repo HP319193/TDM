@@ -72,8 +72,39 @@ var FrenifyTechWaveTime = new Date();
 			this.BgImg();
 			this.popupMobile();
 			this.upload();
+			this.dbcreate();
 		},
 
+		dbcreate: function () {
+			$("#dbCreate").off().on('click', function () {
+				alert("dbcreate");
+				var dbname = $("#newdb_name").val();
+				dbname = $.trim(dbname);
+
+				var senddata = {
+					"dbname": dbname
+				}
+
+				if (dbname != "") {
+					$.ajax({
+						url: '/dbcreate',
+						method: 'POST',
+						processData: false,
+						contentType: 'application/json',
+						data: JSON.stringify(senddata),
+						success: function (result) {
+							console.log(result);
+							location.reload();
+						},
+						error: function (xhr, status, error) {
+							console.error('Error occurred: ', error);
+						}
+					});
+				}
+
+
+			});
+		},
 		upload: function () {
 			$("#uploadBtn").off().on('click', function () {
 				var files = $('#filelist')[0].files;
@@ -83,6 +114,10 @@ var FrenifyTechWaveTime = new Date();
 				for (var i = 0; i < files.length; i++) {
 					fileData.append('files[]', files[i]);
 				}
+
+				var dbname = $("#querydb").val();
+				console.log(dbname);
+				fileData.append('dbname', dbname)
 
 				$(".techwave_fn_preloader").css("display", "flex");
 
@@ -101,9 +136,9 @@ var FrenifyTechWaveTime = new Date();
 							activeTab.removeClass("active");
 							activeTab.trigger("click");
 
-							$(".alert").html('Succeed');
+							console.log("Success");
 						}
-						else $(".alert").html('Failed');
+						else console.log("Failed");
 
 						$(".techwave_fn_preloader").css("display", "none");
 
@@ -461,10 +496,22 @@ var FrenifyTechWaveTime = new Date();
 			});
 
 			var title = $("#page_title").val();
+			var db = $("#querydb").val();
 			var sendData = {
 				"prompt": TechwaveUserQuestion,
-				"title": title
+				"title": title,
+				"db": db
 			};
+
+			$('.fn__chat_comment button').addClass('disabled');
+			setTimeout(function () {
+				$('.fn__chatbot .chat__item.active').append('<div class="chat__box bot__chat"><div class="author"><span>Real Estate Agent</span></div><div class="chat"><frenify_typing><h3><span>Thinking...</frenify></h3></div></div>');
+				if ($('.techwave_fn_intro').length) {
+					$("html, body").animate({ scrollTop: $('#fn__chat_textarea').offset().top - $(window).height() + 100 });
+				} else {
+					$("html, body").animate({ scrollTop: $(document).height() - $(window).height() });
+				}
+			}, 100);
 
 			$.ajax({
 				url: '/query',
@@ -474,15 +521,7 @@ var FrenifyTechWaveTime = new Date();
 				success: function (result) {
 					if (result.success === "ok") {
 						console.log(result.response);
-						$('.fn__chat_comment button').addClass('disabled');
-						setTimeout(function () {
-							$('.fn__chatbot .chat__item.active').append('<div class="chat__box bot__chat"><div class="author"><span>Real Estate Agent</span></div><div class="chat"><frenify_typing><h3><span>Thinking...</frenify></h3></div></div>');
-							if ($('.techwave_fn_intro').length) {
-								$("html, body").animate({ scrollTop: $('#fn__chat_textarea').offset().top - $(window).height() + 100 });
-							} else {
-								$("html, body").animate({ scrollTop: $(document).height() - $(window).height() });
-							}
-						}, 100);
+
 						setTimeout(function () {
 							$('.fn__chatbot .chat__item.active .chat__box.bot__chat:last-child .chat').html(result.response);
 							$('.fn__chat_comment button').removeClass('disabled');

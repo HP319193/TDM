@@ -171,7 +171,7 @@ body {
 
 .alert {
 	color: var(--techwave-main-color);
-	font-size: 20px;
+	font-size: 16px;
 	margin-top: 40px;
 	text-align: center;
 }
@@ -2250,6 +2250,18 @@ frenify_typing span {
 	font-weight: 400;
 	letter-spacing: 0;
 	font-family: var(--techwave-heading-font-family);
+}
+
+.alert input {
+	width: 90%;
+	margin-top: 10px;
+}
+
+.alert .techwave_fn_button {
+	margin: 0 auto;
+	display: block;
+	width: 90%;
+	margin-top: 20px;
 }
 
 .techwave_fn_searchbar .results__title {
@@ -4806,6 +4818,7 @@ a.fn__like.no_border .fn__svg {
 	position: relative;
 	display: block;
 	overflow: hidden;
+	margin-top: 15px;
 }
 
 .fn__upload .upload_content {

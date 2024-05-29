@@ -34,6 +34,8 @@ embeddings = OpenAIEmbeddings(openai_api_key=OPENAI_API_KEY)
 retrieval_qa_chat_prompt = hub.pull("langchain-ai/retrieval-qa-chat")
 llm = ChatOpenAI(api_key=OPENAI_API_KEY)
 
+vectordb_path = "./vector_db"
+
 @app.route('/')
 def home():
     return redirect(url_for('search_view'))
@@ -44,13 +46,15 @@ def search_view():
 
 @app.route('/rag_view')
 def rag_view():
-    return render_template('rag.html')
+    dbs = [f.name for f in os.scandir(vectordb_path) if f.is_dir()]
+    return render_template('rag.html', dbs = dbs)
 
 @app.route('/query', methods=['POST'])
 def query():
     if request.method == "POST":
         prompt = request.get_json().get("prompt")
         title = request.get_json().get("title")
+        db = request.get_json().get("db")
         
         if title == "search":
             response = tavily.search(query=prompt, include_images=True, include_answer=True, max_results=5)
@@ -64,28 +68,33 @@ def query():
             return jsonify(data)    
 
         elif title == "rag":
-            db = Chroma(persist_directory="./chroma_db", embedding_function=embeddings)
-            
-            docs = db.similarity_search(prompt)
-            
-            prompt = ChatPromptTemplate.from_messages(
-                [("system", "{prompt}\n\n{context}")]
-            )
-            
-            llm = ChatOpenAI(model="gpt-4-1106-preview", api_key=OPENAI_API_KEY)
-            chain = create_stuff_documents_chain(llm, prompt)
+            if db != "":
+                db = Chroma(persist_directory=os.path.join(vectordb_path, db), embedding_function=embeddings)
+                
+                docs = db.similarity_search(prompt)
+                
+                prompt = ChatPromptTemplate.from_messages(
+                    [("system", "{prompt}\n\n{context}")]
+                )
+                
+                llm = ChatOpenAI(model="gpt-4-1106-preview", api_key=OPENAI_API_KEY)
+                chain = create_stuff_documents_chain(llm, prompt)
 
-            answer = chain.invoke({"context": docs, "prompt": prompt})
+                answer = chain.invoke({"context": docs, "prompt": prompt})
 
-            data = {"success": "ok", "response": answer}
-            
-            return jsonify(data)
-            
+                data = {"success": "ok", "response": answer}
+                
+                return jsonify(data)
+            else:
+                data = {"success": "ok", "response": "Please select database."}
+
+                return jsonify(data)
+        
 @app.route('/uploadDocuments', methods=['POST'])
 @csrf.exempt
 def uploadDocuments():
     uploaded_files = request.files.getlist('files[]')
-    print(len(uploaded_files))
+    dbname = request.form.get('dbname')
     if len(uploaded_files) > 0:    
         # try:
         for file in uploaded_files:
@@ -99,7 +108,7 @@ def uploadDocuments():
             data = loader.load()
             texts = text_splitter.split_documents(data)
             
-            Chroma.from_documents(texts, embeddings, persist_directory="./chroma_db")
+            Chroma.from_documents(texts, embeddings, persist_directory=os.path.join(vectordb_path, dbname))
             
         return {'success': "ok"}
         # except:
@@ -107,7 +116,16 @@ def uploadDocuments():
     else:
         return {"success": "bad"}
 
-
-
+@app.route('/dbcreate', methods=['POST'])
+@csrf.exempt
+def dbcreate():
+    dbname = request.get_json().get("dbname")
+    
+    if not os.path.exists(os.path.join(vectordb_path, dbname)):
+        os.makedirs(os.path.join(vectordb_path, dbname))
+        return {'success': "ok"}
+    else:
+        return {'success': 'bad'}
+    
 if __name__ == '__main__':
     app.run(debug=True)
