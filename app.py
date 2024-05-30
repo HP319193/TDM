@@ -74,7 +74,7 @@ def query():
                 docs = db.similarity_search(prompt)
                 
                 prompt = ChatPromptTemplate.from_messages(
-                    [("system", "{prompt}\n\n{context}")]
+                    [("system", "Please answer to user's query based on following context.\n\nContext: {context}")]
                 )
                 
                 llm = ChatOpenAI(model="gpt-4-1106-preview", api_key=OPENAI_API_KEY)
@@ -95,8 +95,11 @@ def query():
 def uploadDocuments():
     uploaded_files = request.files.getlist('files[]')
     dbname = request.form.get('dbname')
+
+    if dbname == "":
+        return {"success": "db"}
+    
     if len(uploaded_files) > 0:    
-        # try:
         for file in uploaded_files:
             file.save(f"uploads/{file.filename}")
         
@@ -111,8 +114,7 @@ def uploadDocuments():
             Chroma.from_documents(texts, embeddings, persist_directory=os.path.join(vectordb_path, dbname))
             
         return {'success': "ok"}
-        # except:
-        #     return {"success": "bad"}
+
     else:
         return {"success": "bad"}
 
