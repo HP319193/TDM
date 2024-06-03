@@ -138,6 +138,9 @@ var FrenifyTechWaveTime = new Date();
 
 							console.log("Success");
 						}
+						else if (result.success === "db") {
+							alert("Please select database.")
+						}
 						else console.log("Failed");
 
 						$(".techwave_fn_preloader").css("display", "none");
@@ -147,7 +150,7 @@ var FrenifyTechWaveTime = new Date();
 						console.error('Error occurred: ', error);
 						alert("Error occurred!");
 						$(".techwave_fn_preloader").css("display", "none");
-						$(".alert").html('Failed');
+						// $(".alert").html('Failed');
 					}
 				});
 
