@@ -17,6 +17,8 @@ from langchain.chains.combine_documents import create_stuff_documents_chain
 from langchain.chains import create_retrieval_chain
 from langchain import hub
 from langchain_core.prompts import ChatPromptTemplate
+from langchain.chains.question_answering import load_qa_chain
+from langchain.prompts import PromptTemplate
 
 import time
 load_dotenv()
@@ -69,20 +71,36 @@ def query():
 
         elif title == "rag":
             if db != "":
+                template = """Please answer to human's input based on context.
+                Context: {context}
+                Human: {human_input}
+                Your Response as Chatbot:"""
+                
+                prompt_s = PromptTemplate(
+                    input_variables=["human_input", "context"],
+                    template=template
+                )
+
                 db = Chroma(persist_directory=os.path.join(vectordb_path, db), embedding_function=embeddings)
                 
                 docs = db.similarity_search(prompt)
                 
-                prompt = ChatPromptTemplate.from_messages(
-                    [("system", "Please answer to user's query based on following context.\n\nContext: {context}")]
-                )
-                
                 llm = ChatOpenAI(model="gpt-4-1106-preview", api_key=OPENAI_API_KEY)
-                chain = create_stuff_documents_chain(llm, prompt)
 
-                answer = chain.invoke({"context": docs, "prompt": prompt})
+                stuff_chain = load_qa_chain(llm, chain_type="stuff", prompt=prompt_s)
+                output = stuff_chain({"input_documents": docs, "human_input": prompt}, return_only_outputs=False)
 
-                data = {"success": "ok", "response": answer}
+                final_answer = output["output_text"]
+                # prompt = ChatPromptTemplate.from_messages(
+                #     [("system", "Please answer to user's query based on following context.\n\nContext: {context}")]
+                # )
+                
+                
+                # chain = create_stuff_documents_chain(llm, prompt)
+
+                # answer = chain.invoke({"context": docs, "prompt": prompt})
+
+                data = {"success": "ok", "response": final_answer}
                 
                 return jsonify(data)
             else:
